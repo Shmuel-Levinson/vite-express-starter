@@ -1,0 +1,10 @@
+{
+	"emeraldwalk.runonsave": {
+		"commands": [
+			{
+				"match": "\\.ts$",
+				"cmd": "\"C:\\Program Files\\Git\\bin\\bash.exe\" -c ./copy-models.sh"
+			},	
+		]
+	}
+}
