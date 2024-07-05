@@ -1,54 +1,50 @@
-import { useEffect, useState } from "react";
-import KeyPad from "./KeyPad";
-import { getAllUsers, getExpenses } from "./api";
-import { Expense, User } from "./models/models";
+import {useEffect, useState} from "react";
+import {getAllUsers, ping} from "./api";
+import {User} from "./models/models";
+import "./App.css";
 
 function App() {
-	const [users, setUsers] = useState<User[]>([]);
-	const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-	useEffect(() => {
-		getAllUsers().then((users) => {
-			console.log(users);
-			setUsers(users as User[]);
-		});
-	}, []);
+    const [users, setUsers] = useState<User[]>([]);
+    const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+    useEffect(() => {
+        getAllUsers().then((users) => {
+            setUsers(users);
+        });
+    }, []);
 
-  useEffect(() => {
-    //fetch expenses by user
-    if(!loggedInUser){
-      return;
-    }
-    getExpenses(loggedInUser.id).then((expenses) => {
-      console.log(expenses);
-      setExpenses(expenses as Expense[]);
-    });
-  },[loggedInUser])
-
-	return (
-		<div>
-			{loggedInUser && <KeyPad user={loggedInUser} />}
-			<div>
-        <div style={{fontWeight:"bolder"}}>log in as:</div>
-				{users.map((user) => (
-					<div
-						style={{ textDecoration: "underline", cursor: "pointer" }}
-						onClick={() => {
-							setLoggedInUser(user);
-
-						}}
-					>
-						{`${user.full_name} ${loggedInUser === user ? " (logged in)" : ""}`}
-					</div>
-				))}
-			</div>
-      {expenses.map((expense) => (
-        <div>
-          {expense.amount}
-        </div>
-      ))}
-		</div>
-	);
+    return (
+        <>
+            <button
+                className="test"
+                onClick={async () => {
+                    try {
+                        const res = await ping();
+                        console.log(res);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                }}
+            >
+                Ping
+            </button>
+            <section>
+                <p style={{fontWeight: "bolder", marginBlock:10}}>log in as:</p>
+                <ul style={{display: "flex", flexDirection: "column", gap:10}}>
+                    {users.map((user) => (
+                        <li
+							key={user.id}
+                            style={{textDecoration: "underline", cursor: "pointer"}}
+                            onClick={() => {
+                                setLoggedInUser(user);
+                            }}
+                        >
+                            {`${user.full_name} ${loggedInUser === user ? " (logged in)" : ""}`}
+                        </li>
+                    ))}
+                </ul>
+            </section>
+        </>
+    );
 }
 
 export default App;

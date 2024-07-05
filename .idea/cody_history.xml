@@ -47,6 +47,39 @@
                   </llm>
                 </llm>
               </chat>
+              <chat>
+                <internalId value="56efa176-86d3-443e-9262-e10938c80e9d" />
+                <llm>
+                  <llm>
+                    <model value="anthropic/claude-3-sonnet-20240229" />
+                    <provider value="Anthropic" />
+                    <title value="Claude 3 Sonnet" />
+                  </llm>
+                </llm>
+              </chat>
+              <chat>
+                <internalId value="f5fc330e-b285-4a09-b686-09043bbd2ca4" />
+                <llm>
+                  <llm>
+                    <model value="anthropic/claude-3-sonnet-20240229" />
+                    <provider value="Anthropic" />
+                    <title value="Claude 3 Sonnet" />
+                  </llm>
+                </llm>
+                <messages>
+                  <list>
+                    <message>
+                      <speaker value="HUMAN" />
+                      <text value="i want a css rule to apply to evertying" />
+                    </message>
+                    <message>
+                      <speaker value="ASSISTANT" />
+                      <text value="Based on the provided context, which is a README file for a React + TypeScript + Vite project, there is no information about CSS rules or selectors. However, in general, to apply a CSS rule to everything in a CSS file, you can use the universal selector `*`.&#10;&#10;Here's an example:&#10;&#10;```css&#10;/* This rule will apply to all elements */&#10;* {&#10;  box-sizing: border-box;&#10;  margin: 0;&#10;  padding: 0;&#10;}&#10;```&#10;&#10;The universal selector `*` targets all elements on the page. However, it's generally not recommended to use it excessively, as it can lead to performance issues and specificity conflicts. It's better to use more specific selectors whenever possible, targeting only the elements you need to style." />
+                    </message>
+                  </list>
+                </messages>
+                <updatedAt value="2024-07-05T22:32:19.7547994" />
+              </chat>
             </list>
           </chats>
           <defaultLlm>
