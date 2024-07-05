@@ -10,7 +10,7 @@ const client = new Client(process.env.DATABASE_URL);
 async function sanityCheck () {
 	const results = await client.query("SELECT NOW()");
 	console.log(results.rows);
-};
+}
 const initDb = async () => {
 	await client.connect();
 
