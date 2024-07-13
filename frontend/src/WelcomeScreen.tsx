@@ -1,23 +1,26 @@
 import {useState} from 'react';
-import {registerUser} from "./api.ts";
+import {loginUser, registerUser} from "./api.ts";
 import {generateRandomUser} from "./debug-utils.ts";
 
 
 export default function WelcomeScreen() {
     const randomUser: { username: string, email: string, password: string } = generateRandomUser();
-    const [name, setName] = useState(randomUser.username);
-    const [email, setEmail] = useState( randomUser.email);
-    const [password, setPassword] = useState(       randomUser.password);
+    const [username, setUsername] = useState(randomUser.username);
+    const [email, setEmail] = useState(randomUser.email);
+    const [password, setPassword] = useState(randomUser.password);
 
     const handleRegister = () => {
-        console.log('Register:', name, email, password);
-        registerUser({email: email, password: password, username: name}).then((user) => {
+        console.log('Register:', username, email, password);
+        registerUser({email: email, password: password, username: username}).then((user) => {
             console.log(user);
         });
     }
 
     const handleLogin = () => {
         console.log('Login:', email, password);
+        loginUser({email: email, password: password, username: username}).then((user) => {
+            console.log(user);
+        });
     }
 
     return (
@@ -33,9 +36,9 @@ export default function WelcomeScreen() {
                 <input
                     type="text"
                     placeholder="Username"
-                    value={name}
+                    value={username}
                     onChange={(e) => {
-                        setName(e.target.value)
+                        setUsername(e.target.value)
                     }}
                     style={{marginBottom: '10px'}}
                 />

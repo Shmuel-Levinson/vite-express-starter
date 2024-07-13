@@ -10,4 +10,4 @@ async function initDb(){
     } catch (err) {
         console.error("error executing query:", err);
     }
-};
+}

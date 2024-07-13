@@ -5,3 +5,9 @@ export type User = {
 	email: string;
 	password?: string;
 }
+
+export type Auth = {
+	salt: string;
+	password: string;
+	refresh_token?: string;
+}

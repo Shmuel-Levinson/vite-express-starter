@@ -36,5 +36,6 @@ export const decodeObjectFromBase64 = (base64String: string) => {
     return JSON.parse(objectAsString)
 }
 
-
-module.exports = {applySha, generateSalt, encodeObjectToBase64, decodeObjectFromBase64, getRandomString: generateRandomString}
+export function shaPasswordWithSalt(password: string, salt: string) {
+    return applySha(password + salt)
+}

@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 import sql from "sql-bricks";
 import cors from "cors";
 import {dbClient} from "./db";
-import {User} from "./models";
-import {applySha, generateSalt} from "./security/SecurityUtils";
+import {Auth, User} from "./models";
+import {generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
 
 dotenv.config();
 
@@ -23,30 +23,54 @@ async function getAllUsers() {
     }
 }
 
-async function createUser({username, email, password}: User): Promise<User | undefined> {
+async function createUser({username, email}: User): Promise<User | undefined> {
     try {
-        const query = sql.insertInto('users', {username, email, password}).toString() + "RETURNING *"
+        const query = sql.insertInto('users', {username, email}).toString() + "RETURNING *"
         const result: User[] = await queryDb<User[]>(query);
         return result[0];
     } catch (err) {
         console.error("Error creating user:", err);
+        return undefined;
+    }
+}
+
+async function createUserAuth(userId: number, password: string): Promise<Auth> {
+    try {
+        const salt = generateSalt();
+        const saltedPasswordAfterSha = shaPasswordWithSalt(password, salt);
+        const query = sql.insertInto('auth', {
+            user_id: userId,
+            salt: salt,
+            password: saltedPasswordAfterSha
+        }).toString() + "RETURNING *"
+        const result: Auth[] = await queryDb<Auth[]>(query);
+        return result[0];
+    } catch (err) {
+        console.error("Error creating auth:", err);
         throw (err);
     }
 }
 
-async function createUserAuth(user: User): Promise<any> {
+async function getUserByUsername(username: string): Promise<User> {
     try {
-        const salt = generateSalt();
-        const saltedPasswordAfterSha = applySha(user.password + salt)
-        const query = sql.insertInto('auth', {
-            user_id: user.id,
-            salt: salt,
-            password: saltedPasswordAfterSha
-        }).toString() + "RETURNING *"
+        const query = sql.select().from('users').where(sql.eq('username', username)).toString()
+        console.log(query);
         const result: User[] = await queryDb<User[]>(query);
+        console.log(result);
         return result[0];
     } catch (err) {
-        console.error("Error creating auth:", err);
+        console.error("Error getting user by username:", err);
+        throw (err);
+    }
+}
+
+async function getUserAuthByUserId(userId: number): Promise<any> {
+    try {
+        const query = sql.select().from('auth').where(sql.eq('user_id', userId)).toString()
+        const result: Auth[] = await queryDb<Auth[]>(query);
+        return result[0];
+    } catch (err) {
+        console.error("Error getting user by username:", err);
         throw (err);
     }
 }
@@ -91,22 +115,59 @@ app.get("/users", async (req: Request, res: Response) => {
 app.post("/register", async (req: Request, res: Response) => {
     const {username, email, password} = req.body;
     try {
-        const createdUser = await createUser({username, email, password});
+        const createdUser = await createUser({username, email});
         const userAlreadyExists = createdUser === undefined;
         if (userAlreadyExists) {
-            res.status(409).send({response: `User ${username} already exists.`})
+            res.status(409).send({message: `User ${username} already exists.`})
             return;
         }
-        const auth = await createUserAuth(createdUser);
+        if (createdUser.id === undefined) {
+            res.status(500).send({message: "Error creating user:"})
+            return;
+        }
+        const auth = await createUserAuth(createdUser.id, password);
         res.send({
             message: "Created user successfully",
             user: createdUser
         });
     } catch (err) {
         console.error("Error registering user:", err);
-        res.status(500).send({response: "error", error: err})
+        res.status(500).send({message: "Error registering user:", error: err})
     }
 });
+
+app.post("/login", async (req: Request, res: Response) => {
+        const {username, password} = req.body;
+        try {
+            const user = await getUserByUsername(username);
+            if (user === undefined) {
+                res.status(404).send({message: `User ${username} not found.`})
+                return;
+            }
+            let auth;
+            if (user.id) {
+                auth = await getUserAuthByUserId(user.id);
+            }
+            if (auth === undefined) {
+                res.status(404).send({message: `Auth for ${username} not found.`})
+                return;
+            }
+            const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
+            if (saltedPasswordAfterSha !== auth.password) {
+                res.status(401).send({message: `Username or password incorrect.`})
+                console.log("user name or password incorrect");
+                return;
+            }
+            res.send({
+                message: "Login successful",
+                logged_in: true,
+                user: user
+            });
+        } catch (err) {
+            throw err;
+        }
+    }
+)
 
 
 app.listen(port, () => {
