@@ -2,6 +2,7 @@ import {useEffect, useState} from "react";
 import {getAllUsers, ping} from "./api";
 import {User} from "./models/models";
 import "./App.css";
+import WelcomeScreen from "./WelcomeScreen.tsx";
 
 function App() {
     const [users, setUsers] = useState<User[]>([]);
@@ -28,21 +29,22 @@ function App() {
                 Ping
             </button>
             <section>
-                <p style={{fontWeight: "bolder", marginBlock:10}}>log in as:</p>
-                <ul style={{display: "flex", flexDirection: "column", gap:10}}>
+                <p style={{fontWeight: "bolder", marginBlock: 10}}>log in as:</p>
+                <ul style={{display: "flex", flexDirection: "column", gap: 10}}>
                     {users.map((user) => (
                         <li
-							key={user.id}
+                            key={user.id}
                             style={{textDecoration: "underline", cursor: "pointer"}}
                             onClick={() => {
                                 setLoggedInUser(user);
                             }}
                         >
-                            {`${user.full_name} ${loggedInUser === user ? " (logged in)" : ""}`}
+                            {`${user.username} ${loggedInUser === user ? " (logged in)" : ""}`}
                         </li>
                     ))}
                 </ul>
             </section>
+            <WelcomeScreen/>
         </>
     );
 }
