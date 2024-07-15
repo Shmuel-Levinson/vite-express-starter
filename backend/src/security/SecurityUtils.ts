@@ -1,5 +1,5 @@
 const sha = require("js-sha256")
-import {ALPHABET} from "./utils/constants"
+import {ALPHABET} from "../utils/constants"
 
 export const applySha = (text: string) => {
     return sha.sha256(text)

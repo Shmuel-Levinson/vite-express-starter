@@ -8,7 +8,10 @@ import {Auth, User} from "./models";
 import {generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-import {httpOnlyCookieOptions} from "./security/token-helper-functions"
+import {
+    accessTokenCookieOptions,
+    refreshTokenCookieOptions
+} from "./security/token-helper-functions"
 dotenv.config();
 
 async function sanityCheck() {
@@ -104,7 +107,7 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use(cookieParser());
 app.use((req: Request, res: Response, next: Function) => {
     console.log('middleware');
-    console.log(req.cookies.test);
+    console.log(req.cookies);
     next();
 });
 
@@ -173,15 +176,16 @@ async function loginWithUserName(username: string, password: string, res: Respon
         return;
     }
     res.status(200)
-        .cookie("RT","my refresh token", httpOnlyCookieOptions(new Date(Date.now() + 5 * 1000)))
+        .cookie("RT","my refresh token", refreshTokenCookieOptions())
+        .cookie("AT","my access token", accessTokenCookieOptions())
         .send({message: "Login successful", user: user, logged_in: true});
     return;
 }
 
 app.post("/login", async (req: Request, res: Response) => {
         const {username, password} = req.body;
-        const refreshToken = req.cookies.refreshToken;
-        const accessToken = req.cookies.accessToken;
+        const refreshToken = req.cookies.RT;
+        const accessToken = req.cookies.AT;
         console.log('RT', refreshToken);
         console.log('AT', accessToken);
         try {

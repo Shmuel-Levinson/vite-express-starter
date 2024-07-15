@@ -1,6 +1,8 @@
+import {nowWithDelta} from "../utils/DateUtils";
+
 const {Jwt} = require( "./Jwt");
 
-const {getExpirationDate} = require("./utils/DateUtils");
+const {getExpirationDate} = require("../utils/DateUtils");
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY
 function generateJwtToken(body: any, header = {typ: "JWT", alg: "SHA256"}) {
     const accessTokenJwtObject = new Jwt(header, body)
@@ -51,7 +53,7 @@ function getRefreshTokenCookieOptions(expirationDate: any) {
     };
 }
 
-export function httpOnlyCookieOptions(expirationDate: any) {
+export function httpOnlyCookieOptions(expirationDate: Date) {
     return {
         // sameSite: "none",
         // path: '/',
@@ -59,5 +61,13 @@ export function httpOnlyCookieOptions(expirationDate: any) {
         // secure: true,
         httpOnly: true
     };
+}
+
+export function refreshTokenCookieOptions() {
+    return httpOnlyCookieOptions(nowWithDelta({seconds: 20}))
+}
+
+export function accessTokenCookieOptions() {
+    return httpOnlyCookieOptions(nowWithDelta({seconds: 20}))
 }
 

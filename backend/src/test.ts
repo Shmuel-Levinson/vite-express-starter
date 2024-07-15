@@ -1,4 +1,5 @@
-import {test} from "./security/utils/DateUtils";
+import {test} from "./utils/DateUtils";
 import {runJwtTest} from "./security/Jwt";
 
-runJwtTest();
+// runJwtTest();
+test()
