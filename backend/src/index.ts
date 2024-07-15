@@ -116,7 +116,7 @@ app.get("/ping", (req: Request, res: Response) => {
 
 app.post('/setCookies', (req: Request, res: Response) => {
     res.status(200).cookie('test', 'test-value', {
-        // httpOnly: true,
+        httpOnly: true,
         // maxAge: 1000000000000,
         // sameSite: 'none',
         // path: '/',
