@@ -27,7 +27,7 @@ function getJwtTokenAndVerificationResult (jwtToken: any){
         const verificationResult = Jwt.verifySignature(jwtToken, JWT_SECRET_KEY)
         if (verificationResult) {
             isVerified = true;
-            const jwtObject = Jwt.fromEncodedAndSignedJwt(jwtToken)
+            const jwtObject = Jwt.decode(jwtToken)
             decodedToken = jwtObject.getDecoded()
         } else {
             message = 'token verification failed!'

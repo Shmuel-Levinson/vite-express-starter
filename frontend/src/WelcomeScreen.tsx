@@ -35,6 +35,15 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
             console.error('Error logging in:', error);
         }
     }
+    const handleSilentLogin = async () => {
+        try {
+            console.log('Silent Login:', email, password);
+            const user = await loginUser();
+            console.log(user);
+        } catch (error) {
+            console.error('Error logging in:', error);
+        }
+    }
 
     return (
         <div style={{
@@ -77,6 +86,7 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
             <div>
                 <button onClick={handleRegister}>Register</button>
                 <button onClick={handleLogin}>Log In</button>
+                <button onClick={handleSilentLogin}>Silent Log In</button>
             </div>
         </div>
     );

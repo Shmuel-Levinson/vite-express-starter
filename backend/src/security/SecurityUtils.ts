@@ -19,12 +19,7 @@ export const generateSalt = () => {
     return applySha(randomString)
 }
 
-export const encodeObjectToBase64 = (object: {
-    typ?: string;
-    alg?: string;
-    isAdmin?: boolean;
-    permissions?: { lists: number; users: number }
-}, encoding = 'utf8') => {
+export const encodeObjectToBase64 = (object: object, encoding = 'utf8') => {
     const stringifiedJson = JSON.stringify(object)
     let buf = Buffer.from(stringifiedJson + encoding)
     return buf.toString("base64")
@@ -33,7 +28,7 @@ export const encodeObjectToBase64 = (object: {
 export const decodeObjectFromBase64 = (base64String: string) => {
     let buf = Buffer.from(base64String, "base64")
     const objectAsString = buf.toString('utf8')
-    return JSON.parse(objectAsString)
+    return JSON.parse(objectAsString.slice(0, -4))
 }
 
 export function shaPasswordWithSalt(password: string, salt: string) {

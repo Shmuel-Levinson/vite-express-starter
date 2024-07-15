@@ -13,6 +13,7 @@ import {
     refreshTokenCookieOptions
 } from "./security/token-helper-functions"
 import {Jwt} from "./security/Jwt";
+import {isInThePast, nowWithDelta} from "./utils/DateUtils";
 
 dotenv.config();
 
@@ -58,6 +59,20 @@ async function createUserAuth(userId: number, password: string): Promise<Auth> {
     }
 }
 
+async function updateRefreshToken(userId: number, refreshToken: string) {
+    try {
+        const query = sql.update('auth').set({
+            refresh_token: refreshToken,
+
+        }).where(sql.eq('user_id', userId)).toString()
+        console.log(query);
+        return await queryDb<Auth[]>(query);
+    } catch (err) {
+        console.error("Error updating refresh token:", err);
+        throw (err);
+    }
+}
+
 async function getUserByUsername(username: string): Promise<User> {
     try {
         const query = sql.select().from('users').where(sql.eq('username', username)).toString()
@@ -67,6 +82,19 @@ async function getUserByUsername(username: string): Promise<User> {
         return result[0];
     } catch (err) {
         console.error("Error getting user by username:", err);
+        throw (err);
+    }
+}
+
+async function getUserById(id: number) {
+    try {
+        const query = sql.select().from('users').where(sql.eq('id', id)).toString()
+        console.log(query);
+        const result: User[] = await queryDb<User[]>(query);
+        console.log(result);
+        return result[0];
+    } catch (err) {
+        console.error("Error getting user by id:", err);
         throw (err);
     }
 }
@@ -156,27 +184,7 @@ app.post("/register", async (req: Request, res: Response) => {
     }
 });
 
-async function loginWithUserName(username: string, password: string, res: Response): Promise<void> {
-    const user = await getUserByUsername(username);
-
-    if (user === undefined) {
-        res.status(404).send({message: `User ${username} not found.`})
-        return;
-    }
-    let auth;
-    if (user.id) {
-        auth = await getUserAuthByUserId(user.id);
-    }
-    if (auth === undefined) {
-        res.status(404).send({message: `Auth for ${username} not found.`})
-        return;
-    }
-    const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
-    if (saltedPasswordAfterSha !== auth.password) {
-        res.status(401).send({message: `Username or password incorrect.`})
-        console.log("Username or password incorrect.");
-        return;
-    }
+async function logUserIn(user: User, res: Response<any, Record<string, any>>) {
     const refreshToken = new Jwt(
         {
             typ: '',
@@ -185,7 +193,8 @@ async function loginWithUserName(username: string, password: string, res: Respon
         {
             id: user.id,
             role: 'user',
-            nonce: 'rt_' + generateRandomString(5)
+            nonce: 'rt_' + generateRandomString(5),
+            expires: nowWithDelta({seconds: 10})
         })
     const accessToken = new Jwt(
         {
@@ -195,14 +204,47 @@ async function loginWithUserName(username: string, password: string, res: Respon
         {
             id: user.id,
             role: 'user',
-            nonce: 'at_' + generateRandomString(5)
+            nonce: 'at_' + generateRandomString(5),
+            expires: nowWithDelta({seconds: 10})
         })
+
     refreshToken.sign(process.env.JWT_SECRET_KEY);
     accessToken.sign(process.env.JWT_SECRET_KEY);
+    await updateRefreshToken(user.id!, refreshToken.encodedAndSigned());
     res.status(200)
         .cookie("RT", refreshToken.encodedAndSigned(), refreshTokenCookieOptions())
         .cookie("AT", accessToken.encodedAndSigned(), accessTokenCookieOptions())
         .send({message: "Login successful", user: user, logged_in: true});
+}
+
+async function loginWithUserName(username: string, password: string, res: Response, checkPassword = true): Promise<void> {
+    const user = await getUserByUsername(username);
+
+    if (user === undefined) {
+        res.status(404).send({message: `User ${username} not found.`})
+        return;
+    }
+    let auth;
+    if (user.id) {
+        auth = await getUserAuthByUserId(user.id);
+    } else {
+        res.status(404).send({message: `User ${username} not found.`})
+        return
+    }
+    if (auth === undefined) {
+        res.status(404).send({message: `Auth for ${username} not found.`})
+        return;
+    }
+    if (checkPassword) {
+        const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
+        if (saltedPasswordAfterSha !== auth.password) {
+            res.status(401).send({message: `Username or password incorrect.`})
+            console.log("Username or password incorrect.");
+            return;
+        }
+    }
+
+    await logUserIn(user, res);
     return;
 }
 
@@ -217,7 +259,23 @@ app.post("/login", async (req: Request, res: Response) => {
                 await loginWithUserName(username, password, res);
                 return;
             }
-
+            if (!refreshToken) {
+                res.status(401).send({message: "No auth token provided.", logged_in: false})
+                return;
+            }
+            const refreshTokenVerified = Jwt.verifySignature(refreshToken, process.env.JWT_SECRET_KEY);
+            if (!refreshTokenVerified) {
+                res.status(401).send({message: "Auth token invalid.", logged_in: false})
+                return;
+            }
+            const decodedRefreshToken = Jwt.decodeHeaderAndBody(refreshToken);
+            if (isInThePast(new Date(decodedRefreshToken.body.expires))) {
+                res.status(401).send({message: "Auth token expired.", logged_in: false});
+                return;
+            }
+            const user = await getUserById(decodedRefreshToken.body.id);
+            await logUserIn(user, res);
+            return;
         } catch (err) {
             throw err;
         }

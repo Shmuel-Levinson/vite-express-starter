@@ -1,4 +1,4 @@
-import sha  from "js-sha256"
+import sha from "js-sha256"
 import {encodeObjectToBase64, decodeObjectFromBase64} from "./SecurityUtils"
 
 
@@ -8,6 +8,7 @@ export class Jwt {
     encodedHeader: string;
     encodedBody: string;
     signature: string;
+
     constructor(header: { typ: string; alg: string }, body: object) {
         const encodedHeader = encodeObjectToBase64(header)
         const encodedBody = encodeObjectToBase64(body)
@@ -19,12 +20,20 @@ export class Jwt {
 
     }
 
-    static fromEncodedAndSignedJwt(encodedAndSignedJwt: string){
+    static decode(encodedAndSignedJwt: string) {
         const encodedHeader = encodedAndSignedJwt.split(".")[0]
         const encodedBody = encodedAndSignedJwt.split(".")[1]
-        const  decodedHeader= decodeObjectFromBase64(encodedHeader)
-        const  decodedBody= decodeObjectFromBase64(encodedBody)
-        return new Jwt(decodedHeader,decodedBody)
+        const decodedHeader = decodeObjectFromBase64(encodedHeader)
+        const decodedBody = decodeObjectFromBase64(encodedBody)
+        return new Jwt(decodedHeader, decodedBody)
+    }
+
+    static decodeHeaderAndBody(encodedAndSignedJwt: string) {
+        const encodedHeader = encodedAndSignedJwt.split(".")[0]
+        const encodedBody = encodedAndSignedJwt.split(".")[1]
+        const decodedHeader = decodeObjectFromBase64(encodedHeader)
+        const decodedBody = decodeObjectFromBase64(encodedBody)
+        return {header: decodedHeader, body: decodedBody}
     }
 
     static createSignature(encodedHeader: string, encodedBody: string, secretKey: any) {

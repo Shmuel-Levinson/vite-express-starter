@@ -27,7 +27,7 @@ export async function registerUser(user: User): Promise<User> {
     return response.data;
 }
 
-export async function loginUser(user: User): Promise<User> {
+export async function loginUser(user?: User): Promise<User> {
     const response = await axiosInstance.post<User>(`${ENV.VITE_API_URL}/login`, user);
     return response.data;
 }
