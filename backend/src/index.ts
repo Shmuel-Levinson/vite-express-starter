@@ -8,7 +8,7 @@ import {Auth, User} from "./models";
 import {generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-
+import {httpOnlyCookieOptions} from "./security/token-helper-functions"
 dotenv.config();
 
 async function sanityCheck() {
@@ -104,7 +104,6 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use(cookieParser());
 app.use((req: Request, res: Response, next: Function) => {
     console.log('middleware');
-
     console.log(req.cookies.test);
     next();
 });
@@ -117,9 +116,7 @@ app.get("/ping", (req: Request, res: Response) => {
 app.post('/setCookies', (req: Request, res: Response) => {
     res.status(200).cookie('test', 'test-value', {
         httpOnly: true,
-        // maxAge: 1000000000000,
-        // sameSite: 'none',
-        // path: '/',
+        expires: new Date(Date.now() + 5 * 1000),
     });
     res.send({response: "setCookies", date: new Date()});
 })
@@ -154,6 +151,33 @@ app.post("/register", async (req: Request, res: Response) => {
     }
 });
 
+async function loginWithUserName(username: string, password: string, res: Response): Promise<void> {
+    const user = await getUserByUsername(username);
+
+    if (user === undefined) {
+        res.status(404).send({message: `User ${username} not found.`})
+        return;
+    }
+    let auth;
+    if (user.id) {
+        auth = await getUserAuthByUserId(user.id);
+    }
+    if (auth === undefined) {
+        res.status(404).send({message: `Auth for ${username} not found.`})
+        return;
+    }
+    const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
+    if (saltedPasswordAfterSha !== auth.password) {
+        res.status(401).send({message: `Username or password incorrect.`})
+        console.log("Username or password incorrect.");
+        return;
+    }
+    res.status(200)
+        .cookie("RT","my refresh token", httpOnlyCookieOptions(new Date(Date.now() + 5 * 1000)))
+        .send({message: "Login successful", user: user, logged_in: true});
+    return;
+}
+
 app.post("/login", async (req: Request, res: Response) => {
         const {username, password} = req.body;
         const refreshToken = req.cookies.refreshToken;
@@ -161,30 +185,10 @@ app.post("/login", async (req: Request, res: Response) => {
         console.log('RT', refreshToken);
         console.log('AT', accessToken);
         try {
-            const user = await getUserByUsername(username);
-            if (user === undefined) {
-                res.status(404).send({message: `User ${username} not found.`})
+            if (username && password) {
+                await loginWithUserName(username, password, res);
                 return;
             }
-            let auth;
-            if (user.id) {
-                auth = await getUserAuthByUserId(user.id);
-            }
-            if (auth === undefined) {
-                res.status(404).send({message: `Auth for ${username} not found.`})
-                return;
-            }
-            const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
-            if (saltedPasswordAfterSha !== auth.password) {
-                res.status(401).send({message: `Username or password incorrect.`})
-                console.log("user name or password incorrect");
-                return;
-            }
-            res.send({
-                message: "Login successful",
-                logged_in: true,
-                user: user
-            });
         } catch (err) {
             throw err;
         }

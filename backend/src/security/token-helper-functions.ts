@@ -2,7 +2,7 @@ const {Jwt} = require( "./Jwt");
 
 const {getExpirationDate} = require("./utils/DateUtils");
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY
-function generateJwtToken(body, header = {typ: "JWT", alg: "SHA256"}) {
+function generateJwtToken(body: any, header = {typ: "JWT", alg: "SHA256"}) {
     const accessTokenJwtObject = new Jwt(header, body)
     accessTokenJwtObject.sign(JWT_SECRET_KEY)
     return accessTokenJwtObject.encodedAndSigned();
@@ -17,7 +17,7 @@ function getAccessTokenExpirationDate() {
 }
 
 
-function getJwtTokenAndVerificationResult (jwtToken){
+function getJwtTokenAndVerificationResult (jwtToken: any){
     let isVerified = false;
     let decodedToken = null
     let message = ""
@@ -41,7 +41,7 @@ function getJwtTokenAndVerificationResult (jwtToken){
     }
 }
 
-function getRefreshTokenCookieOptions(expirationDate) {
+function getRefreshTokenCookieOptions(expirationDate: any) {
     return {
         sameSite: "none",
         path: '/',
@@ -51,11 +51,13 @@ function getRefreshTokenCookieOptions(expirationDate) {
     };
 }
 
-module.exports = {
-    generateJwtToken,
-    getRefreshTokenExpirationDate,
-    getAccessTokenExpirationDate,
-    getJwtTokenAndVerificationResult,
-    getRefreshTokenCookieOptions
+export function httpOnlyCookieOptions(expirationDate: any) {
+    return {
+        // sameSite: "none",
+        // path: '/',
+        expires: expirationDate,
+        // secure: true,
+        httpOnly: true
+    };
 }
 
