@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {loginUser, registerUser} from "./api.ts";
-import {generateRandomUser} from "./debug-utils.ts";
+// import {generateRandomUser} from "./debug-utils.ts";
 import {User} from "./models/models.ts";
 
 
@@ -10,10 +10,10 @@ interface WelcomeScreenProps {
 }
 
 export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeScreenProps) {
-    const randomUser: { username: string, email: string, password: string } = generateRandomUser();
-    const [username, setUsername] = useState(randomUser.username);
-    const [email, setEmail] = useState(randomUser.email);
-    const [password, setPassword] = useState(randomUser.password);
+    // const randomUser: { username: string, email: string, password: string } = generateRandomUser();
+    const [username, setUsername] = useState("a");
+    const [email, setEmail] = useState("a");
+    const [password, setPassword] = useState("a");
 
     const handleRegister = async () => {
         try {

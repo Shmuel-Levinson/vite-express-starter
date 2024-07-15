@@ -4,17 +4,18 @@ import {encodeObjectToBase64, decodeObjectFromBase64} from "./SecurityUtils"
 
 export class Jwt {
     header: { typ: string; alg: string }
-    body: { isAdmin: boolean; permissions: { lists: number; users: number } };
+    body: object;
     encodedHeader: string;
     encodedBody: string;
-    signature: string | undefined;
-    constructor(header: { typ: string; alg: string }, body: { isAdmin: boolean; permissions: { lists: number; users: number } }) {
+    signature: string;
+    constructor(header: { typ: string; alg: string }, body: object) {
         const encodedHeader = encodeObjectToBase64(header)
         const encodedBody = encodeObjectToBase64(body)
         this.header = header
         this.body = body
         this.encodedHeader = encodedHeader
         this.encodedBody = encodedBody
+        this.signature = ""
 
     }
 
@@ -23,9 +24,6 @@ export class Jwt {
         const encodedBody = encodedAndSignedJwt.split(".")[1]
         const  decodedHeader= decodeObjectFromBase64(encodedHeader)
         const  decodedBody= decodeObjectFromBase64(encodedBody)
-        // console.log('FROM ENCODED AND SIGNED JWT ------------------------------')
-        // console.log(decodedBody)
-        // console.log('----------------------------------------------------------')
         return new Jwt(decodedHeader,decodedBody)
     }
 

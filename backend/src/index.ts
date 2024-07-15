@@ -5,13 +5,15 @@ import sql from "sql-bricks";
 import cors from "cors";
 import {dbClient} from "./db";
 import {Auth, User} from "./models";
-import {generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
+import {generateRandomString, generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import {
     accessTokenCookieOptions,
     refreshTokenCookieOptions
 } from "./security/token-helper-functions"
+import {Jwt} from "./security/Jwt";
+
 dotenv.config();
 
 async function sanityCheck() {
@@ -175,9 +177,31 @@ async function loginWithUserName(username: string, password: string, res: Respon
         console.log("Username or password incorrect.");
         return;
     }
+    const refreshToken = new Jwt(
+        {
+            typ: '',
+            alg: 'sha'
+        },
+        {
+            id: user.id,
+            role: 'user',
+            nonce: 'rt_' + generateRandomString(5)
+        })
+    const accessToken = new Jwt(
+        {
+            typ: '',
+            alg: 'sha'
+        },
+        {
+            id: user.id,
+            role: 'user',
+            nonce: 'at_' + generateRandomString(5)
+        })
+    refreshToken.sign(process.env.JWT_SECRET_KEY);
+    accessToken.sign(process.env.JWT_SECRET_KEY);
     res.status(200)
-        .cookie("RT","my refresh token", refreshTokenCookieOptions())
-        .cookie("AT","my access token", accessTokenCookieOptions())
+        .cookie("RT", refreshToken.encodedAndSigned(), refreshTokenCookieOptions())
+        .cookie("AT", accessToken.encodedAndSigned(), accessTokenCookieOptions())
         .send({message: "Login successful", user: user, logged_in: true});
     return;
 }
@@ -193,6 +217,7 @@ app.post("/login", async (req: Request, res: Response) => {
                 await loginWithUserName(username, password, res);
                 return;
             }
+
         } catch (err) {
             throw err;
         }
