@@ -1,26 +1,39 @@
 import {useState} from 'react';
 import {loginUser, registerUser} from "./api.ts";
 import {generateRandomUser} from "./debug-utils.ts";
+import {User} from "./models/models.ts";
 
 
-export default function WelcomeScreen() {
+interface WelcomeScreenProps {
+    addUser?: (user: User) => void
+    formType?: 'login' | 'register'
+}
+
+export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeScreenProps) {
     const randomUser: { username: string, email: string, password: string } = generateRandomUser();
     const [username, setUsername] = useState(randomUser.username);
     const [email, setEmail] = useState(randomUser.email);
     const [password, setPassword] = useState(randomUser.password);
 
-    const handleRegister = () => {
-        console.log('Register:', username, email, password);
-        registerUser({email: email, password: password, username: username}).then((user) => {
-            console.log(user);
-        });
+    const handleRegister = async () => {
+        try {
+            console.log('Register:', username, email, password);
+            const res = await registerUser({email: email, password: password, username: username});
+            console.log(res);
+            addUser && addUser(res);
+        } catch (error) {
+            console.error('Error registering user:', error);
+        }
     }
 
-    const handleLogin = () => {
-        console.log('Login:', email, password);
-        loginUser({email: email, password: password, username: username}).then((user) => {
+    const handleLogin = async () => {
+        try {
+            console.log('Login:', email, password);
+            const user = await loginUser({email: email, password: password, username: username});
             console.log(user);
-        });
+        } catch (error) {
+            console.error('Error logging in:', error);
+        }
     }
 
     return (
@@ -29,7 +42,7 @@ export default function WelcomeScreen() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            height: '100vh'
+            height: '100%'
         }}>
             <h1>Welcome to the React App!</h1>
             <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -42,7 +55,7 @@ export default function WelcomeScreen() {
                     }}
                     style={{marginBottom: '10px'}}
                 />
-                <input
+                {formType === 'register' && <input
                     type="email"
                     placeholder="Email"
                     value={email}
@@ -50,7 +63,7 @@ export default function WelcomeScreen() {
                         setEmail(e.target.value)
                     }}
                     style={{marginBottom: '10px'}}
-                />
+                />}
                 <input
                     type="password"
                     placeholder="Password"

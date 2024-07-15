@@ -8,6 +8,6 @@ async function initDb(){
         await dbClient.connect();
         // await sanityCheck();
     } catch (err) {
-        console.error("error executing query:", err);
+        console.error("error connecting to db", err);
     }
 }

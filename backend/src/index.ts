@@ -6,6 +6,8 @@ import cors from "cors";
 import {dbClient} from "./db";
 import {Auth, User} from "./models";
 import {generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
+import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
 
 dotenv.config();
 
@@ -90,14 +92,20 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 
 const corsOptions = {
-    origin: "*",
+    origin: 'http://localhost:5173',
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false,
     optionsSuccessStatus: 204,
+    credentials: true
 };
 app.use(cors(corsOptions));
-
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({extended: true}))
+app.use(cookieParser());
 app.use((req: Request, res: Response, next: Function) => {
+    console.log('middleware');
+
+    console.log(req.cookies.test);
     next();
 });
 
@@ -105,6 +113,16 @@ app.get("/ping", (req: Request, res: Response) => {
     console.log('got ping')
     res.send({response: "pong", date: new Date()});
 });
+
+app.post('/setCookies', (req: Request, res: Response) => {
+    res.status(200).cookie('test', 'test-value', {
+        // httpOnly: true,
+        // maxAge: 1000000000000,
+        // sameSite: 'none',
+        // path: '/',
+    });
+    res.send({response: "setCookies", date: new Date()});
+})
 
 
 app.get("/users", async (req: Request, res: Response) => {
@@ -138,6 +156,10 @@ app.post("/register", async (req: Request, res: Response) => {
 
 app.post("/login", async (req: Request, res: Response) => {
         const {username, password} = req.body;
+        const refreshToken = req.cookies.refreshToken;
+        const accessToken = req.cookies.accessToken;
+        console.log('RT', refreshToken);
+        console.log('AT', accessToken);
         try {
             const user = await getUserByUsername(username);
             if (user === undefined) {

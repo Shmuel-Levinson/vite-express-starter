@@ -4,8 +4,13 @@ import axios from "axios";
 import { ENV } from "./env";
 
 export async function ping(): Promise<object> {
-	const response = await axios.get(`http://localhost:5000/ping`);
+	const response = await axios.get(`${ENV.VITE_API_URL}/ping`, {withCredentials: true});
 	return response.data;
+}
+
+export async function setCookies():Promise<object>{
+    const response = await axios.post(`${ENV.VITE_API_URL}/setCookies`,{},{withCredentials: true});
+    return response.data;
 }
 
 export async function getAllUsers(): Promise<User[]> {
@@ -13,6 +18,7 @@ export async function getAllUsers(): Promise<User[]> {
 	return response.data;
 }
 
+//todo: fix signature and return type
 export async function registerUser(user: User): Promise<User> {
     const response = await axios.post<User>(`${ENV.VITE_API_URL}/register`, user);
     return response.data;
