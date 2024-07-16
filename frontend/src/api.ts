@@ -28,6 +28,12 @@ export async function registerUser(user: User): Promise<User> {
 }
 
 export async function loginUser(user?: User): Promise<User> {
+    //if user is not provided, we assume that the user is already logged in and rely on the cookies
     const response = await axiosInstance.post<User>(`${ENV.VITE_API_URL}/login`, user);
+    return response.data;
+}
+
+export async function logoutUser(): Promise<User> {
+    const response = await axiosInstance.post<User>(`${ENV.VITE_API_URL}/logout`);
     return response.data;
 }

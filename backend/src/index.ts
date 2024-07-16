@@ -12,7 +12,7 @@ import {
     accessTokenCookieOptions,
     refreshTokenCookieOptions
 } from "./security/token-helper-functions"
-import {Jwt} from "./security/Jwt";
+import {getTokenCookiesPair, Jwt} from "./security/Jwt";
 import {isInThePast, nowWithDelta} from "./utils/DateUtils";
 
 dotenv.config();
@@ -173,51 +173,34 @@ app.post("/register", async (req: Request, res: Response) => {
             res.status(500).send({message: "Error creating user:"})
             return;
         }
-        const auth = await createUserAuth(createdUser.id, password);
-        res.send({
-            message: "Created user successfully",
-            user: createdUser
-        });
+        await createUserAuth(createdUser.id, password);
+        await logAuthenticatedUserIn(createdUser, res, true);
+
     } catch (err) {
         console.error("Error registering user:", err);
         res.status(500).send({message: "Error registering user:", error: err})
     }
 });
 
-async function logUserIn(user: User, res: Response<any, Record<string, any>>) {
-    const refreshToken = new Jwt(
-        {
-            typ: '',
-            alg: 'sha'
-        },
-        {
-            id: user.id,
-            role: 'user',
-            nonce: 'rt_' + generateRandomString(5),
-            expires: nowWithDelta({seconds: 10})
-        })
-    const accessToken = new Jwt(
-        {
-            typ: '',
-            alg: 'sha'
-        },
-        {
-            id: user.id,
-            role: 'user',
-            nonce: 'at_' + generateRandomString(5),
-            expires: nowWithDelta({seconds: 10})
-        })
 
-    refreshToken.sign(process.env.JWT_SECRET_KEY);
-    accessToken.sign(process.env.JWT_SECRET_KEY);
-    await updateRefreshToken(user.id!, refreshToken.encodedAndSigned());
+async function logAuthenticatedUserIn(user: User, res: Response<any, Record<string, any>>, isRegistration = false) {
+    const {rtCookie, atCookie} = getTokenCookiesPair(user);
+    await updateRefreshToken(user.id!, rtCookie);
+    const body: { message: string, user: User, logged_in: boolean, is_registration?: boolean } = {
+        message: "Login successful",
+        user: user,
+        logged_in: true,
+    };
+    if (isRegistration) {
+        body.is_registration = true;
+    }
     res.status(200)
-        .cookie("RT", refreshToken.encodedAndSigned(), refreshTokenCookieOptions())
-        .cookie("AT", accessToken.encodedAndSigned(), accessTokenCookieOptions())
-        .send({message: "Login successful", user: user, logged_in: true});
+        .cookie("RT", rtCookie, refreshTokenCookieOptions())
+        .cookie("AT", atCookie, accessTokenCookieOptions())
+        .send(body);
 }
 
-async function loginWithUserName(username: string, password: string, res: Response, checkPassword = true): Promise<void> {
+async function loginWithUserName(username: string, password: string, res: Response): Promise<void> {
     const user = await getUserByUsername(username);
 
     if (user === undefined) {
@@ -235,16 +218,34 @@ async function loginWithUserName(username: string, password: string, res: Respon
         res.status(404).send({message: `Auth for ${username} not found.`})
         return;
     }
-    if (checkPassword) {
-        const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
-        if (saltedPasswordAfterSha !== auth.password) {
-            res.status(401).send({message: `Username or password incorrect.`})
-            console.log("Username or password incorrect.");
-            return;
-        }
+    const saltedPasswordAfterSha = shaPasswordWithSalt(password, auth.salt);
+    if (saltedPasswordAfterSha !== auth.password) {
+        res.status(401).send({message: `Username or password incorrect.`})
+        console.log("Username or password incorrect.");
+        return;
     }
+    await logAuthenticatedUserIn(user, res);
+    return;
+}
 
-    await logUserIn(user, res);
+async function loginWithRefreshToken(refreshToken: string, res: Response<any, Record<string, any>>) {
+    if (!refreshToken) {
+        res.status(401).send({message: "No auth token provided.", logged_in: false})
+        return;
+    }
+    const refreshTokenVerified = Jwt.verifySignature(refreshToken, process.env.JWT_SECRET_KEY);
+    if (!refreshTokenVerified) {
+        res.status(401).send({message: "Auth token invalid.", logged_in: false})
+        return;
+    }
+    const decodedRefreshToken = Jwt.decodeHeaderAndBody(refreshToken);
+    const refreshTokenExpirationDate = new Date(decodedRefreshToken.body.expires);
+    if (isInThePast(refreshTokenExpirationDate)) {
+        res.status(401).send({message: "Auth token expired.", logged_in: false});
+        return;
+    }
+    const user = await getUserById(decodedRefreshToken.body.id);
+    await logAuthenticatedUserIn(user, res);
     return;
 }
 
@@ -259,28 +260,16 @@ app.post("/login", async (req: Request, res: Response) => {
                 await loginWithUserName(username, password, res);
                 return;
             }
-            if (!refreshToken) {
-                res.status(401).send({message: "No auth token provided.", logged_in: false})
-                return;
-            }
-            const refreshTokenVerified = Jwt.verifySignature(refreshToken, process.env.JWT_SECRET_KEY);
-            if (!refreshTokenVerified) {
-                res.status(401).send({message: "Auth token invalid.", logged_in: false})
-                return;
-            }
-            const decodedRefreshToken = Jwt.decodeHeaderAndBody(refreshToken);
-            if (isInThePast(new Date(decodedRefreshToken.body.expires))) {
-                res.status(401).send({message: "Auth token expired.", logged_in: false});
-                return;
-            }
-            const user = await getUserById(decodedRefreshToken.body.id);
-            await logUserIn(user, res);
-            return;
+            await loginWithRefreshToken(refreshToken, res);
         } catch (err) {
             throw err;
         }
     }
 )
+
+app.post("/logout", async (req: Request, res: Response) => {
+    res.clearCookie("RT").clearCookie("AT").send({message: "Logged out.", logged_in: false});
+})
 
 
 app.listen(port, () => {

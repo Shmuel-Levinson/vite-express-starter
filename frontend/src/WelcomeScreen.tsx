@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {loginUser, registerUser} from "./api.ts";
+import {loginUser, logoutUser, registerUser} from "./api.ts";
 // import {generateRandomUser} from "./debug-utils.ts";
 import {User} from "./models/models.ts";
 
@@ -30,6 +30,15 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
         try {
             console.log('Login:', email, password);
             const user = await loginUser({email: email, password: password, username: username});
+            console.log(user);
+        } catch (error) {
+            console.error('Error logging in:', error);
+        }
+    }
+    const handleLogout = async () => {
+        try {
+            console.log('Logout:', email, password);
+            const user = await logoutUser();
             console.log(user);
         } catch (error) {
             console.error('Error logging in:', error);
@@ -87,6 +96,8 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
                 <button onClick={handleRegister}>Register</button>
                 <button onClick={handleLogin}>Log In</button>
                 <button onClick={handleSilentLogin}>Silent Log In</button>
+                <button onClick={handleLogout}>Log Out</button>
+
             </div>
         </div>
     );

@@ -1,5 +1,7 @@
 import sha from "js-sha256"
-import {encodeObjectToBase64, decodeObjectFromBase64} from "./SecurityUtils"
+import {encodeObjectToBase64, decodeObjectFromBase64, generateRandomString} from "./SecurityUtils"
+import {User} from "../models";
+import {nowWithDelta} from "../utils/DateUtils";
 
 
 export class Jwt {
@@ -63,7 +65,34 @@ export class Jwt {
         return expectedSignature === providedSignature
     }
 }
+export function getTokenCookiesPair(user: User) {
+    const refreshToken = new Jwt(
+        {
+            typ: '',
+            alg: 'sha'
+        },
+        {
+            id: user.id,
+            role: 'user',
+            nonce: 'rt_' + generateRandomString(5),
+            expires: nowWithDelta({seconds: 10})
+        })
+    const accessToken = new Jwt(
+        {
+            typ: '',
+            alg: 'sha'
+        },
+        {
+            id: user.id,
+            role: 'user',
+            nonce: 'at_' + generateRandomString(5),
+            expires: nowWithDelta({seconds: 10})
+        })
 
+    refreshToken.sign(process.env.JWT_SECRET_KEY);
+    accessToken.sign(process.env.JWT_SECRET_KEY);
+    return {rtCookie: refreshToken.encodedAndSigned(), atCookie: accessToken.encodedAndSigned()};
+}
 export function runJwtTest() {
     console.log("hello world")
     const SECRET_KEY = process.env.JWT_SECRET_KEY
