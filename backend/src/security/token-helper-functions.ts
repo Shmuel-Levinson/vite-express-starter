@@ -10,12 +10,12 @@ function generateJwtToken(body: any, header = {typ: "JWT", alg: "SHA256"}) {
     return accessTokenJwtObject.encodedAndSigned();
 }
 
-function getRefreshTokenExpirationDate() {
-    return getExpirationDate(1, 0, 0, 0);
+export function calculateRefreshTokenExpirationDate() {
+    return nowWithDelta({minutes: 5});
 }
 
-function getAccessTokenExpirationDate() {
-    return getExpirationDate(0, 0, 1, 0);
+export function calculateAccessTokenExpirationDate() {
+    return nowWithDelta({seconds: 15});
 }
 
 
@@ -64,10 +64,9 @@ export function httpOnlyCookieOptions(expirationDate: Date) {
 }
 
 export function refreshTokenCookieOptions() {
-    return httpOnlyCookieOptions(nowWithDelta({seconds: 20}))
+    return httpOnlyCookieOptions(calculateRefreshTokenExpirationDate())
 }
 
 export function accessTokenCookieOptions() {
-    return httpOnlyCookieOptions(nowWithDelta({seconds: 20}))
+    return httpOnlyCookieOptions(calculateAccessTokenExpirationDate())
 }
-

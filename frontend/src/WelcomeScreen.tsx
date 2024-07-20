@@ -1,36 +1,40 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {loginUser, logoutUser, registerUser} from "./api.ts";
+import {useAuth} from "./components/AuthContext.js.tsx";
 // import {generateRandomUser} from "./debug-utils.ts";
-import {User} from "./models/models.ts";
 
 
 interface WelcomeScreenProps {
-    addUser?: (user: User) => void
     formType?: 'login' | 'register'
 }
 
-export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeScreenProps) {
+export default function WelcomeScreen({formType = 'register'}: WelcomeScreenProps) {
     // const randomUser: { username: string, email: string, password: string } = generateRandomUser();
-    const [username, setUsername] = useState("a");
-    const [email, setEmail] = useState("a");
-    const [password, setPassword] = useState("a");
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const {loggedInUser,setLoggedInUser} = useAuth();
+    useEffect(() => {
+        loginUser().then(() => {
 
+        });
+    }, []);
     const handleRegister = async () => {
         try {
             console.log('Register:', username, email, password);
             const res = await registerUser({email: email, password: password, username: username});
             console.log(res);
-            addUser && addUser(res);
+            // setLoggedIn(true);
         } catch (error) {
             console.error('Error registering user:', error);
         }
     }
-
     const handleLogin = async () => {
         try {
             console.log('Login:', email, password);
             const user = await loginUser({email: email, password: password, username: username});
             console.log(user);
+            // setLoggedIn(true);
         } catch (error) {
             console.error('Error logging in:', error);
         }
@@ -40,6 +44,7 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
             console.log('Logout:', email, password);
             const user = await logoutUser();
             console.log(user);
+            setLoggedInUser(null)
         } catch (error) {
             console.error('Error logging in:', error);
         }
@@ -48,6 +53,7 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
         try {
             console.log('Silent Login:', email, password);
             const user = await loginUser();
+            // setLoggedIn(true);
             console.log(user);
         } catch (error) {
             console.error('Error logging in:', error);
@@ -63,6 +69,9 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
             height: '100%'
         }}>
             <h1>Welcome to the React App!</h1>
+            <h2>{loggedInUser?.username}</h2>
+            <h2 style={{backgroundColor: loggedInUser ? "#99eeee" : "#ee9999"}}>
+                {`You are ${loggedInUser ? "logged in" : "not logged in"}`}</h2>
             <div style={{display: 'flex', flexDirection: 'column'}}>
                 <input
                     type="text"
@@ -97,8 +106,9 @@ export default function WelcomeScreen({addUser, formType = 'register'}: WelcomeS
                 <button onClick={handleLogin}>Log In</button>
                 <button onClick={handleSilentLogin}>Silent Log In</button>
                 <button onClick={handleLogout}>Log Out</button>
-
             </div>
+
+
         </div>
     );
 }

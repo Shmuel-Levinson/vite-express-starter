@@ -2,6 +2,7 @@ import sha from "js-sha256"
 import {encodeObjectToBase64, decodeObjectFromBase64, generateRandomString} from "./SecurityUtils"
 import {User} from "../models";
 import {nowWithDelta} from "../utils/DateUtils";
+import {calculateAccessTokenExpirationDate, calculateRefreshTokenExpirationDate} from "./token-helper-functions";
 
 
 export class Jwt {
@@ -65,17 +66,17 @@ export class Jwt {
         return expectedSignature === providedSignature
     }
 }
-export function getTokenCookiesPair(user: User) {
+export function getTokenCookiesPair(userId: number) {
     const refreshToken = new Jwt(
         {
             typ: '',
             alg: 'sha'
         },
         {
-            id: user.id,
+            id: userId,
             role: 'user',
             nonce: 'rt_' + generateRandomString(5),
-            expires: nowWithDelta({seconds: 10})
+            expires: calculateRefreshTokenExpirationDate()
         })
     const accessToken = new Jwt(
         {
@@ -83,10 +84,10 @@ export function getTokenCookiesPair(user: User) {
             alg: 'sha'
         },
         {
-            id: user.id,
+            id: userId,
             role: 'user',
             nonce: 'at_' + generateRandomString(5),
-            expires: nowWithDelta({seconds: 10})
+            expires: calculateAccessTokenExpirationDate()
         })
 
     refreshToken.sign(process.env.JWT_SECRET_KEY);

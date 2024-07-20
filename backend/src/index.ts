@@ -1,5 +1,5 @@
 // src/index.js
-import express, {Express, Request, Response} from "express";
+import express, {Express, NextFunction, Request, Response} from "express";
 import dotenv from "dotenv";
 import sql from "sql-bricks";
 import cors from "cors";
@@ -8,12 +8,9 @@ import {Auth, User} from "./models";
 import {generateRandomString, generateSalt, shaPasswordWithSalt} from "./security/SecurityUtils";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-import {
-    accessTokenCookieOptions,
-    refreshTokenCookieOptions
-} from "./security/token-helper-functions"
+import {accessTokenCookieOptions, refreshTokenCookieOptions} from "./security/token-helper-functions"
 import {getTokenCookiesPair, Jwt} from "./security/Jwt";
-import {isInThePast, nowWithDelta} from "./utils/DateUtils";
+import {isInThePast} from "./utils/DateUtils";
 
 dotenv.config();
 
@@ -120,6 +117,10 @@ async function queryDb<T>(query: string) {
     }
 }
 
+function doesntRequireAuthenticationProcess(requestPath: string) {
+    return ['*', '/test', '/login', '/register', '/logout'].includes(requestPath);
+}
+
 const app: Express = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
@@ -135,15 +136,47 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(cookieParser());
-app.use((req: Request, res: Response, next: Function) => {
-    console.log('middleware');
-    console.log(req.cookies);
+app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log('authentication middleware');
+    if (doesntRequireAuthenticationProcess(req.path)) {
+        console.log('authentication process skipped for path', req.path);
+        next();
+        return
+    }
+    const refreshToken = req.cookies.RT;
+    const accessToken = req.cookies.AT;
+    const accessVerification = verifyAndDecodeToken(accessToken, res);
+    if (accessVerification.verified) {
+        console.log('access token is valid');
+        // adding userId to the request body so that we can use it in the routes
+        res.locals.userId = accessVerification.decodedToken.body.id;
+        next();
+        return
+    }
+    const refreshVerification = verifyAndDecodeToken(refreshToken, res);
+    console.log('refresh verification', refreshVerification);
+    if (refreshVerification.verified === false) {
+        clearCookiesAndSendLogout(res)
+        // res.status(401).send({message: refreshVerification.message, logged_in: false})
+        return
+    }
+    // accessToken is not valid, but refreshToken is valid
+    // we can use the refreshToken to get a new accessToken
+    // and then use the new accessToken to access the endpoint
+    const userId = refreshVerification.decodedToken.body.id;
+
+    const {rtCookie, atCookie} = getTokenCookiesPair(userId);
+    res.cookie("RT", rtCookie, refreshTokenCookieOptions()) // not sure that we should set this cookie in this case
+    res.cookie("AT", atCookie, accessTokenCookieOptions())
     next();
 });
 
 app.get("/ping", (req: Request, res: Response) => {
     console.log('got ping')
-    res.send({response: "pong", date: new Date()});
+    // console.log(req.body)
+    console.log("locals in ping" , res.locals)
+    const userId = res.locals.userId;
+    res.send({response: "pong", userId: userId, date: new Date()});
 });
 
 app.post('/setCookies', (req: Request, res: Response) => {
@@ -153,7 +186,6 @@ app.post('/setCookies', (req: Request, res: Response) => {
     });
     res.send({response: "setCookies", date: new Date()});
 })
-
 
 app.get("/users", async (req: Request, res: Response) => {
     const allUsers = await getAllUsers();
@@ -182,9 +214,9 @@ app.post("/register", async (req: Request, res: Response) => {
     }
 });
 
+async function logAuthenticatedUserIn(user: User, res: Response, isRegistration = false) {
 
-async function logAuthenticatedUserIn(user: User, res: Response<any, Record<string, any>>, isRegistration = false) {
-    const {rtCookie, atCookie} = getTokenCookiesPair(user);
+    const {rtCookie, atCookie} = getTokenCookiesPair(user.id!);
     await updateRefreshToken(user.id!, rtCookie);
     const body: { message: string, user: User, logged_in: boolean, is_registration?: boolean } = {
         message: "Login successful",
@@ -195,9 +227,9 @@ async function logAuthenticatedUserIn(user: User, res: Response<any, Record<stri
         body.is_registration = true;
     }
     res.status(200)
-        .cookie("RT", rtCookie, refreshTokenCookieOptions())
-        .cookie("AT", atCookie, accessTokenCookieOptions())
-        .send(body);
+    res.cookie("RT", rtCookie, refreshTokenCookieOptions())
+    res.cookie("AT", atCookie, accessTokenCookieOptions())
+    res.send(body);
 }
 
 async function loginWithUserName(username: string, password: string, res: Response): Promise<void> {
@@ -228,23 +260,42 @@ async function loginWithUserName(username: string, password: string, res: Respon
     return;
 }
 
+function verifyAndDecodeToken(token: string, res: Response<any, Record<string, any>>): {
+    decodedToken?: any,
+    verified?: boolean,
+    message?: string
+} {
+    if(!token){
+        return {verified: false, message: "Token missing."};
+    }
+    const signatureVerified = Jwt.verifySignature(token, process.env.JWT_SECRET_KEY);
+    if (!signatureVerified) {
+        console.log("---------Signature invalid.");
+        return {verified: false, message: "Token signature invalid."};
+        // res.status(401).send({message: "Token invalid.", logged_in: false})
+        // return;
+    }
+    const decodedToken = Jwt.decodeHeaderAndBody(token);
+    const tokenExpirationDate = new Date(decodedToken.body.expires);
+    if (isInThePast(tokenExpirationDate)) {
+        console.log("---------Token expired.");
+        return {verified: false, message: "Token expired."};
+        // res.status(401).send({message: "Token expired.", logged_in: false});
+        // return;
+    }
+    return {decodedToken: decodedToken, verified: true};
+}
+
 async function loginWithRefreshToken(refreshToken: string, res: Response<any, Record<string, any>>) {
     if (!refreshToken) {
         res.status(401).send({message: "No auth token provided.", logged_in: false})
         return;
     }
-    const refreshTokenVerified = Jwt.verifySignature(refreshToken, process.env.JWT_SECRET_KEY);
-    if (!refreshTokenVerified) {
-        res.status(401).send({message: "Auth token invalid.", logged_in: false})
-        return;
+    const verificationResult = verifyAndDecodeToken(refreshToken, res);
+    if (verificationResult.verified === false) {
+        res.status(401).send({message: verificationResult.message, logged_in: false})
     }
-    const decodedRefreshToken = Jwt.decodeHeaderAndBody(refreshToken);
-    const refreshTokenExpirationDate = new Date(decodedRefreshToken.body.expires);
-    if (isInThePast(refreshTokenExpirationDate)) {
-        res.status(401).send({message: "Auth token expired.", logged_in: false});
-        return;
-    }
-    const user = await getUserById(decodedRefreshToken.body.id);
+    const user = await getUserById(verificationResult.decodedToken.body.id);
     await logAuthenticatedUserIn(user, res);
     return;
 }
@@ -253,8 +304,6 @@ app.post("/login", async (req: Request, res: Response) => {
         const {username, password} = req.body;
         const refreshToken = req.cookies.RT;
         const accessToken = req.cookies.AT;
-        console.log('RT', refreshToken);
-        console.log('AT', accessToken);
         try {
             if (username && password) {
                 await loginWithUserName(username, password, res);
@@ -267,8 +316,12 @@ app.post("/login", async (req: Request, res: Response) => {
     }
 )
 
+function clearCookiesAndSendLogout(res: Response<any, Record<string, any>>) {
+    res.status(200).clearCookie("RT").clearCookie("AT").send({message: "Logged out.", logged_in: false});
+}
+
 app.post("/logout", async (req: Request, res: Response) => {
-    res.clearCookie("RT").clearCookie("AT").send({message: "Logged out.", logged_in: false});
+    clearCookiesAndSendLogout(res);
 })
 
 
