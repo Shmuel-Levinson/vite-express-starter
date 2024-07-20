@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router'
 import App from "./App.tsx";
 import MainContainer from "./MainContainer.tsx";
+import LoginRegister from "./LoginRegister.tsx";
 
 // const exampleRootRoute = createRootRoute({
 //     component: () => (
@@ -33,11 +34,19 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/',
-    component: function Index() {
-        return (
-            <App/>
-        )
-    },
+    component: ()=><App/>
+})
+
+const loginRoute = createRoute({
+    getParentRoute: ()=> rootRoute,
+    path: '/login',
+    component: ()=> <LoginRegister formType={"login"}/>
+})
+
+const joinRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/join',
+    component: () => <LoginRegister formType={"join"}/>
 })
 
 const aboutRoute = createRoute({
@@ -107,22 +116,7 @@ const aboutRoute = createRoute({
     },
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, aboutRoute])
-
+const routeTree = rootRoute.
+addChildren([indexRoute, aboutRoute, loginRoute, joinRoute])
 const router = createRouter({routeTree})
-
-// declare module '@tanstack/react-router' {
-//     interface Register {
-//         router: typeof router
-//     }
-// }
 export default router;
-// const rootElement = document.getElementById('app')!
-// if (!rootElement.innerHTML) {
-//     const root = ReactDOM.createRoot(rootElement)
-//     root.render(
-//         <StrictMode>
-//             <RouterProvider router={router} />
-//         </StrictMode>,
-//     )
-// }
