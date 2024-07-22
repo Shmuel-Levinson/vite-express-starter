@@ -23,7 +23,8 @@ export default function MainContainer() {
         loginUser().then((res) => {
             setNotification({
                 message: `Welcome back ${res.user.username}`,
-                type: "success"
+                type: "success",
+                title: "Login successful"
             })
         })
     }, []);
@@ -84,8 +85,8 @@ export default function MainContainer() {
                 </div>
             </header>
 
-            <div style={{overflowY: "auto", flex: "1", border: "1px solid gold"}}>
-                {notification && <NotificationModal message={notification?.message} close={() => setNotification(null)} title={"Notification"}/>}
+            <div style={{overflowY: "auto", flex: "1"}}>
+                {notification && <NotificationModal message={notification?.message} close={() => setNotification(null)} title={notification.title}/>}
                 <Outlet/>
             </div>
 

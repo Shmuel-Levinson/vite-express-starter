@@ -10,6 +10,7 @@ interface NotificationContextType {
 export type Notification = {
     message: string
     type: string
+    title: string
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
