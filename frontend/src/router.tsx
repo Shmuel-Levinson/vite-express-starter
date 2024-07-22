@@ -51,7 +51,7 @@ const aboutRoute = createRoute({
     component: function About() {
         return (
             <div style={{width: "100%", display: "flex", alignItems: "center", justifyContent: "center"}}>
-                <div style={{paddingInline:400, fontWeight: "", fontSize: 20}}>
+                <div style={{paddingInline:0, fontWeight: "", fontSize: 20}}>
                     About ShoppingListPro
 
                     Welcome to ShoppingListPro, your ultimate shopping companion designed to simplify your shopping

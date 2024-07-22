@@ -21,9 +21,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({childre
 
     return (
         <NotificationContext.Provider value={{notification, setNotification, showSpinner, setShowSpinner}}>
-    {children}
-    </NotificationContext.Provider>
-);
+            {children}
+        </NotificationContext.Provider>
+    );
 };
 
 // Custom hook for using the AuthContext

@@ -5,12 +5,13 @@ import {loginUser, logoutUser, setupAxiosInterceptors} from "./api.ts";
 import {useNotification} from "./components/NotificationContext.tsx";
 import Notification from "./components/Notification.tsx";
 import Spinner from "./components/Spinner.tsx";
+import NotificationModal from "./components/NotificationModal.tsx";
 
 
 export default function MainContainer() {
     const navigate = useNavigate();
     const {loggedInUser, setLoggedInUser} = useAuth();
-    const {setNotification, notification,setShowSpinner, showSpinner} = useNotification();
+    const {setNotification, notification, setShowSpinner, showSpinner} = useNotification();
 
     useEffect(() => {
         setupAxiosInterceptors(setLoggedInUser, setShowSpinner);
@@ -34,20 +35,19 @@ export default function MainContainer() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                color:"white",
+                color: "white",
                 textAlign: "center",
             }}>
             {showSpinner && <Spinner/>}
         </div>
-        {notification && <Notification message={notification?.message} close={() => setNotification(null)}/>}
+
         <div style={{
             height: "100vh",
             width: "100vw",
             display: "flex",
             flexDirection: "column",
         }}>
-            <header
-                style={{height: 50, width: "100%", backgroundColor: themeColor}}>
+            <header style={{height: 50, width: "100%", backgroundColor: themeColor}}>
                 <div style={{
                     float: "right", height: "100%", display: "flex",
                     flexDirection: "row",
@@ -84,7 +84,8 @@ export default function MainContainer() {
                 </div>
             </header>
 
-            <div style={{overflowY: "auto", flex: "1"}}>
+            <div style={{overflowY: "auto", flex: "1", border: "1px solid gold"}}>
+                {notification && <NotificationModal message={notification?.message} close={() => setNotification(null)} title={"Notification"}/>}
                 <Outlet/>
             </div>
 

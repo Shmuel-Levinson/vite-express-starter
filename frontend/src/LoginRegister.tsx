@@ -1,5 +1,5 @@
-import {useEffect, useState} from 'react';
-import {checkUsername, loginUser, logoutUser, registerUser} from "./api.ts";
+import {useState} from 'react';
+import {checkUsername, loginUser, registerUser} from "./api.ts";
 
 import {useNavigate} from "@tanstack/react-router";
 import useDebounce from "./useDebounce.ts";
@@ -104,7 +104,7 @@ export default function LoginRegister({formType = 'join'}: WelcomeScreenProps) {
                         }}
                         style={{marginBottom: '10px'}}
                     />
-                    <div>{userNameAvailable}</div>
+                    <div style={{height:20}}>{userNameAvailable}</div>
                     <input
                         type="password"
                         autoComplete="current-password"

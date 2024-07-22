@@ -28,12 +28,12 @@ export default function Notification({message, close}: {
                 height: "100%",
                 maxHeight: 500,
                 display: "flex",
-                boxShadow: "0px 0px 3px #000000ee",
-
+                // boxShadow: "0px 0px 3px #000000ee",
                 borderRadius:"5px",
                 justifyContent: "center",
                 alignItems: "center",
                 flexDirection: "column",
+                border: "1px solid #6865c1",
                 gap: 10,
                 paddingBottom: 20
 
