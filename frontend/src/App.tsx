@@ -1,5 +1,10 @@
 import "./App.css";
+import {useAuth} from "./components/AuthContext.js.tsx";
+import {ping} from "./api.ts";
+
+
 function App() {
+    const {loggedInUser} = useAuth();
     return (
         <>
             <div style={{
@@ -9,7 +14,10 @@ function App() {
                 justifyContent: 'center',
                 height: '100%'
             }}>
-                Welcome!
+                <div>
+                    {`This is the home page ${ loggedInUser? "of " + loggedInUser?.username : ""}`}
+                </div>
+                <button style={{width:"min-content"}} onClick={()=>{ping()}}>Ping</button>
             </div>
             {/*<LoginRegister/>*/}
         </>

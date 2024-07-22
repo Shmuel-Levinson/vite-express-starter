@@ -1,8 +1,4 @@
-// import React, { StrictMode } from 'react'
-// import ReactDOM from 'react-dom/client'
 import {
-    Outlet,
-    // Link,
     createRouter,
     createRoute,
     createRootRoute,

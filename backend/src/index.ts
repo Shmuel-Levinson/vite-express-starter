@@ -118,7 +118,7 @@ async function queryDb<T>(query: string) {
 }
 
 function doesntRequireAuthenticationProcess(requestPath: string) {
-    return ['*', '/test', '/login', '/register', '/logout'].includes(requestPath);
+    return ['*', '/test', '/login', '/register', '/logout','/checkUsername'].includes(requestPath);
 }
 
 const app: Express = express();
@@ -192,16 +192,31 @@ app.get("/users", async (req: Request, res: Response) => {
     res.send(allUsers);
 });
 
+app.post("/checkUsername", async (req: Request, res: Response) => {
+    const {username} = req.body;
+    try {
+        const user = await getUserByUsername(username);
+        if (user === undefined) {
+            res.status(200).send({message: "Username is available", available: true});
+        } else {
+            res.status(200).send({message: "Username is taken", available: false});
+        }
+    } catch (err) {
+        console.error("Error checking username:", err);
+        res.status(500).send({message: "Error checking username"});
+    }
+});
+
 app.post("/register", async (req: Request, res: Response) => {
     const {username, email, password} = req.body;
     try {
-        const createdUser = await createUser({username, email});
-        const userAlreadyExists = createdUser === undefined;
+        const userAlreadyExists = await getUserByUsername(username);
         if (userAlreadyExists) {
             res.status(409).send({message: `User ${username} already exists.`})
             return;
         }
-        if (createdUser.id === undefined) {
+        const createdUser = await createUser({username, email});
+        if (createdUser?.id === undefined) {
             res.status(500).send({message: "Error creating user:"})
             return;
         }

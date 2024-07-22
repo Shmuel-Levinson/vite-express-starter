@@ -4,9 +4,11 @@ import {ENV} from "./env";
 
 
 let setLoggedInUser: (user: User | null) => void
+let setShowSpinner: (t: boolean) => void
 
-export function setupAxiosInterceptors(setLoggedInFunction: (user: User | null) => void) {
+export function setupAxiosInterceptors(setLoggedInFunction: (user: User | null) => void, setShowSpinnerFunction: (t: boolean) => void) {
     setLoggedInUser = setLoggedInFunction;
+    setShowSpinner = setShowSpinnerFunction;
 }
 
 export const axiosInstance = axios.create({
@@ -15,14 +17,18 @@ export const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     config => {
+        console.log("request!!", config);
+        setShowSpinner && setShowSpinner(true);
         return config;
     },
     error => {
+        setShowSpinner && setShowSpinner(false);
         return Promise.reject(error);
     }
 );
 axiosInstance.interceptors.response.use(
     res => {
+        setShowSpinner && setShowSpinner(false);
         const user = res.data.user;
         if (res.data.logged_in === true && user) {
             setLoggedInUser && setLoggedInUser(user);
@@ -33,6 +39,7 @@ axiosInstance.interceptors.response.use(
         return res;
     },
     error => {
+        setShowSpinner && setShowSpinner(false);
         return Promise.reject(error);
     }
 );
@@ -58,13 +65,18 @@ export async function registerUser(user: User): Promise<User> {
     return response.data;
 }
 
-export async function loginUser(user?: User): Promise<User> {
+export async function loginUser(user?: User): Promise<{ user:User }> {
     //if user is not provided, we assume that the user is already logged in and rely on the cookies
-    const response = await axiosInstance.post<User>(`${ENV.VITE_API_URL}/login`, user);
+    const response = await axiosInstance.post<{ user:User }>(`${ENV.VITE_API_URL}/login`, user);
     return response.data;
 }
 
 export async function logoutUser(): Promise<User> {
     const response = await axiosInstance.post<User>(`${ENV.VITE_API_URL}/logout`);
     return response.data;
+}
+
+export async function checkUsername(username: string): Promise<object> {
+    const response = await axiosInstance.post<User>(`${ENV.VITE_API_URL}/checkUsername`, {username});
+    return response;
 }
