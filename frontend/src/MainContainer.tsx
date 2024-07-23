@@ -23,15 +23,16 @@ export default function MainContainer() {
     useEffect(() => {
         addAxiosInterceptors({
             onResponse: [{
-                onSuccess: ()=>{
+                onSuccess: (res) => {
                     setShowSpinner(false);
+                    // setBubbleNotification && setBubbleNotification({message: res?.data.message, title: "", type:"success"});
                 },
                 onFailure: () => {
                     setShowSpinner(false);
                 }
-            },{
+            }, {
                 onSuccess: (res) => {
-                    if(!res){
+                    if (!res) {
                         return
                     }
                     const user = res.data.user;
@@ -48,7 +49,7 @@ export default function MainContainer() {
                 }
             }],
             onRequest: [{
-                onSuccess: ()=>{
+                onSuccess: () => {
                     setShowSpinner(true);
                 },
                 onFailure: () => {
@@ -71,19 +72,10 @@ export default function MainContainer() {
     }, []);
     const themeColor = "#6966c3"
     return (<>
-        <div style={
-            {
-                // position: "absolute",
-                // top: "50%",
-                // left: "50%",
-                // transform: "translate(-50%, -50%)",
-                // color: "white",
-                // textAlign: "center",
-            }}>
-            {showSpinner && <Spinner/>}
-        </div>
-
-        <div style={{
+        {showSpinner && <Spinner/>}
+        <div
+            id="fullscreen container"
+            style={{
             height: "100vh",
             width: "100vw",
             display: "flex",
@@ -140,7 +132,7 @@ export default function MainContainer() {
                 width: "100%",
                 backgroundColor: themeColor
             }}>
-                <div>Hello</div>
+
                 {bubbleNotification &&
                     <BubbleNotification message={bubbleNotification.message}
                                         close={() => setBubbleNotification(null)}/>}
