@@ -73,12 +73,12 @@ export default function MainContainer() {
     return (<>
         <div style={
             {
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                color: "white",
-                textAlign: "center",
+                // position: "absolute",
+                // top: "50%",
+                // left: "50%",
+                // transform: "translate(-50%, -50%)",
+                // color: "white",
+                // textAlign: "center",
             }}>
             {showSpinner && <Spinner/>}
         </div>
