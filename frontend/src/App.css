@@ -18,12 +18,11 @@
 }
 
 button {
-    width: 100%;
+    width: fit-content;
     height: 30px;
     padding-inline:4px;
     outline:none;
     vertical-align: middle;
-    /*text-align: center;*/
     border-radius: 4px;
     border: 1px solid #6966c3;
     /*border:none;*/

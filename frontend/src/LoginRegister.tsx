@@ -43,7 +43,7 @@ export default function LoginRegister({formType = 'join'}: WelcomeScreenProps) {
     const [password, setPassword] = useState("");
     // const {loggedInUser, setLoggedInUser} = useAuth();
     const navigate = useNavigate();
-    const {setNotification} = useNotification();
+    const {setNotification, setBubbleNotification} = useNotification();
     const handleRegister = async () => {
         try {
             console.log('Register:', username, email, password);
@@ -63,7 +63,7 @@ export default function LoginRegister({formType = 'join'}: WelcomeScreenProps) {
         try {
             console.log('Login:', email, password);
             const res = await loginUser({email: email, password: password, username: username});
-            setNotification({message: `Welcome ${res.user.username}`, type: "success"})
+            setNotification({message: `Welcome ${res.user.username}`, type: "success", title: "Login Successful"});
             console.log(res);
 
         } catch (error) {

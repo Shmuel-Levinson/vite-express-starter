@@ -1,20 +1,61 @@
 import {Outlet, useNavigate} from "@tanstack/react-router";
 import {useAuth} from "./components/AuthContext.js.tsx";
 import {useEffect} from "react";
-import {loginUser, logoutUser, setupAxiosInterceptors} from "./api.ts";
+import {addAxiosInterceptors, loginUser, logoutUser} from "./api.ts";
 import {useNotification} from "./components/NotificationContext.tsx";
-import Notification from "./components/Notification.tsx";
 import Spinner from "./components/Spinner.tsx";
 import NotificationModal from "./components/NotificationModal.tsx";
+import BubbleNotification from "./components/BubbleNotification.tsx";
 
 
 export default function MainContainer() {
     const navigate = useNavigate();
     const {loggedInUser, setLoggedInUser} = useAuth();
-    const {setNotification, notification, setShowSpinner, showSpinner} = useNotification();
+    const {
+        setNotification,
+        notification,
+        setShowSpinner,
+        showSpinner,
+        setBubbleNotification,
+        bubbleNotification
+    } = useNotification();
 
     useEffect(() => {
-        setupAxiosInterceptors(setLoggedInUser, setShowSpinner);
+        addAxiosInterceptors({
+            onResponse: [{
+                onSuccess: ()=>{
+                    setShowSpinner(false);
+                },
+                onFailure: () => {
+                    setShowSpinner(false);
+                }
+            },{
+                onSuccess: (res) => {
+                    if(!res){
+                        return
+                    }
+                    const user = res.data.user;
+                    if (res.data.logged_in === true && user) {
+                        setLoggedInUser && setLoggedInUser(user);
+                    }
+                    if (res.data.logged_in === false) {
+                        setLoggedInUser && setLoggedInUser(null);
+                    }
+                    return res;
+                },
+                onFailure: (error) => {
+                    setLoggedInUser(null)
+                }
+            }],
+            onRequest: [{
+                onSuccess: ()=>{
+                    setShowSpinner(true);
+                },
+                onFailure: () => {
+                    setShowSpinner(false);
+                }
+            }],
+        })
     })
     useEffect(() => {
         if (loggedInUser) {
@@ -86,7 +127,11 @@ export default function MainContainer() {
             </header>
 
             <div style={{overflowY: "auto", flex: "1"}}>
-                {notification && <NotificationModal message={notification?.message} close={() => setNotification(null)} title={notification.title}/>}
+                {notification && <NotificationModal
+                    title={notification.title}
+                    message={notification?.message}
+                    close={() => setNotification(null)}
+                />}
                 <Outlet/>
             </div>
 
@@ -94,7 +139,12 @@ export default function MainContainer() {
                 height: 50,
                 width: "100%",
                 backgroundColor: themeColor
-            }}></footer>
+            }}>
+                <div>Hello</div>
+                {bubbleNotification &&
+                    <BubbleNotification message={bubbleNotification.message}
+                                        close={() => setBubbleNotification(null)}/>}
+            </footer>
         </div>
     </>)
 

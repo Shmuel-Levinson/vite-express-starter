@@ -1,19 +1,56 @@
 import {User} from "./models/models";
-import axios from "axios";
+import axios, {AxiosResponse, InternalAxiosRequestConfig} from "axios";
 import {ENV} from "./env";
 
 
 let setLoggedInUser: (user: User | null) => void
 let setShowSpinner: (t: boolean) => void
 
-export function setupAxiosInterceptors(setLoggedInFunction: (user: User | null) => void, setShowSpinnerFunction: (t: boolean) => void) {
-    setLoggedInUser = setLoggedInFunction;
-    setShowSpinner = setShowSpinnerFunction;
+type RequestInterceptorSuccess = (config: InternalAxiosRequestConfig) => void
+type ResponseInterceptorSuccess = (response?: AxiosResponse) => void
+type InterceptorFailure = (error?: never) => void
+type RequestInterceptorPair = {
+    onSuccess: RequestInterceptorSuccess,
+    onFailure: InterceptorFailure
+}
+type ResponseInterceptorPair = {
+    onSuccess: ResponseInterceptorSuccess,
+    onFailure: InterceptorFailure
+}
+type ArrayOfRequestInterceptorPairs = RequestInterceptorPair[]
+type ArrayOfResponseInterceptorPairs = ResponseInterceptorPair[]
+
+export function addAxiosInterceptors(interceptorPairs: {
+    onRequest: ArrayOfRequestInterceptorPairs,
+    onResponse: ArrayOfResponseInterceptorPairs
+}) {
+    axiosInstance.interceptors.request.use((config) => {
+        for (const requestInterceptorPair of interceptorPairs.onRequest) {
+            requestInterceptorPair.onSuccess(config);
+        }
+        return config;
+    }, (error) => {
+        for (const requestInterceptorPair of interceptorPairs.onRequest) {
+            requestInterceptorPair.onFailure(error);
+        }
+    });
+    axiosInstance.interceptors.response.use((response) => {
+        for (const responseInterceptorPair of interceptorPairs.onResponse) {
+                responseInterceptorPair.onSuccess(response);
+            }
+        return response;
+    },
+    (error) => {
+        for (const responseInterceptorPair of interceptorPairs.onResponse) {
+                responseInterceptorPair.onSuccess(error);
+        }
+    });
 }
 
 export const axiosInstance = axios.create({
     withCredentials: true,
 })
+
 
 axiosInstance.interceptors.request.use(
     config => {
@@ -65,9 +102,9 @@ export async function registerUser(user: User): Promise<User> {
     return response.data;
 }
 
-export async function loginUser(user?: User): Promise<{ user:User }> {
+export async function loginUser(user?: User): Promise<{ user: User }> {
     //if user is not provided, we assume that the user is already logged in and rely on the cookies
-    const response = await axiosInstance.post<{ user:User }>(`${ENV.VITE_API_URL}/login`, user);
+    const response = await axiosInstance.post<{ user: User }>(`${ENV.VITE_API_URL}/login`, user);
     return response.data;
 }
 
