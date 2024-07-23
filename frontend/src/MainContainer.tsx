@@ -1,12 +1,13 @@
 import {Outlet, useNavigate} from "@tanstack/react-router";
 import {useAuth} from "./components/AuthContext.js.tsx";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {addAxiosInterceptors, loginUser, logoutUser} from "./api.ts";
 import {useNotification} from "./components/NotificationContext.tsx";
 import Spinner from "./components/Spinner.tsx";
 import NotificationModal from "./components/NotificationModal.tsx";
 import BubbleNotification from "./components/BubbleNotification.tsx";
-
+import cross from "./assets/cross.svg";
+import hamburger from "./assets/hamburger.svg";
 
 export default function MainContainer() {
     const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function MainContainer() {
         setBubbleNotification,
         bubbleNotification
     } = useNotification();
-
+    const [showSideMenu, setShowSideMenu] = useState(false);
     useEffect(() => {
         addAxiosInterceptors({
             onResponse: [{
@@ -72,22 +73,41 @@ export default function MainContainer() {
     }, []);
     const themeColor = "#6966c3"
     return (<>
+        <aside style={{
+            position: "absolute",
+            left: showSideMenu ? 0 : "-100%",
+            top: 50,
+            width: "70%",
+            maxWidth: "300px",
+            height: "calc(100vh - 100px)",
+            backgroundColor: "#ffffffee",
+            boxShadow: "0 0 10px 0 rgba(0,0,0,0.1)",
+            transition: "all 0.3s ease",
+        }}>
+
+        </aside>
         {showSpinner && <Spinner/>}
         <div
             id="fullscreen container"
             style={{
-            height: "100vh",
-            width: "100vw",
-            display: "flex",
-            flexDirection: "column",
-        }}>
+                height: "100vh",
+                width: "100vw",
+                display: "flex",
+                flexDirection: "column",
+            }}>
             <header style={{height: 50, width: "100%", backgroundColor: themeColor}}>
                 <div style={{
-                    float: "right", height: "100%", display: "flex",
+                    height: "100%", display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 10
                 }}>
+                    <div onClick={() => {
+                        setShowSideMenu(!showSideMenu)
+                    }}
+                         style={{marginRight: "auto", padding: 20, cursor: "pointer"}}>
+                        <img src={showSideMenu ? cross : hamburger} alt="" style={{width: 30, height: 30}}/>
+                    </div>
                     <div>
                         <button onClick={() => navigate({to: "/about"})}>
                             About
